@@ -39,7 +39,10 @@ function Customer() {
     inquirer.prompt([{
         name: "ID",
         type: "input",
-        message: "What is the ID of the product you wish to purchase?"
+        message: "What is the ID of the product you wish to purchase?",
+        validate: function (input) {
+            return (10 >= input >= 1);
+        }
     },
     {
         name: "amount",
@@ -49,29 +52,25 @@ function Customer() {
     ]).then(answers => {
 
         var product_id = answers.ID;
-        console.log(answers.amount);
         connection.query(`SELECT * FROM products WHERE item_id = ?`, [product_id], function (err, res) {
             if (err) throw err;
-            if (product_id >= 1 && product_id <= 10) {
-                if (res[0].stock_quantity - answers.amount < 0) {
-                    console.log("Not enough items in stock");
-                    Customer();
-                } else {
-                    var TotalCost = answers.amount * res[0].price;
-                    var RemainingStock = res[0].stock_quantity - answers.amount;
-                    connection.query(`UPDATE products SET stock_quantity = ? WHERE item_id = ?`, [RemainingStock, res[0].item_id], function(err,res){
-                        if (err) throw err;
-                    })
-                    console.log("-------------- Your Order is Placed --------------");
-                    console.log(`Total Cost is: ${TotalCost}`);
-                    console.log(`You will recieve: ${answers.amount}x ${res[0].product_name}`);
-                    console.log("--------------------------------------------------");
-                    connection.end();
-                }
-            } else {
-                console.log("Invalid Product ID");
+
+            if (res[0].stock_quantity - answers.amount < 0) {
+                console.log("Not enough items in stock");
                 Customer();
+            } else {
+                var TotalCost = answers.amount * res[0].price;
+                var RemainingStock = res[0].stock_quantity - answers.amount;
+                connection.query(`UPDATE products SET stock_quantity = ? WHERE item_id = ?`, [RemainingStock, res[0].item_id], function (err, res) {
+                    if (err) throw err;
+                })
+                console.log("-------------- Your Order is Placed --------------");
+                console.log(`Total Cost is: ${TotalCost.toFixed(2)}`);
+                console.log(`You will recieve: ${answers.amount}x ${res[0].product_name}`);
+                console.log("--------------------------------------------------");
+                connection.end();
             }
+
         })
     })
 
